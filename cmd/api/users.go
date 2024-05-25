@@ -2,9 +2,9 @@ package main
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/sulavmhrzn/projectideas/internal/data"
+	"github.com/sulavmhrzn/projectideas/internal/validator"
 )
 
 func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -18,11 +18,19 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 		app.badRequestResponse(w, r, err)
 		return
 	}
+
 	user := &data.User{
-		Username:  input.Username,
-		Email:     input.Email,
-		CreatedAt: time.Now(),
+		Username: input.Username,
+		Email:    input.Email,
 	}
+	user.Password.PlainPassword = input.Password
+
+	v := validator.New()
+	if data.ValidateUser(v, user); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
 	err = user.Password.Set(input.Password)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
