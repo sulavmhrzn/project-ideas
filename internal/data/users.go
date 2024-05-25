@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/sulavmhrzn/projectideas/internal/validator"
@@ -36,6 +37,11 @@ func (p *password) Set(plainPassword string) error {
 	return nil
 }
 
+func (p *password) Compare(plainPassword string) bool {
+	err := bcrypt.CompareHashAndPassword(p.HashedPassword, []byte(plainPassword))
+	return err == nil
+}
+
 func ValidateUser(v *validator.Validator, user *User) {
 	v.Check(user.Username != "", "username", "must be provided")
 	v.Check(len(user.Username) <= 10, "username", "must not be greater than 10 characters long")
@@ -67,5 +73,24 @@ func (m UserModel) Insert(user *User) (*User, error) {
 		}
 	}
 	return user, nil
+}
 
+func (m UserModel) GetByEmail(email string) (*User, error) {
+	query := `
+	SELECT id, username, email, hash_password
+	FROM users
+	WHERE email = $1`
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var user User
+	err := m.DB.QueryRowContext(ctx, query, email).Scan(&user.Id, &user.Username, &user.Email, &user.Password.HashedPassword)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrNoRows
+		default:
+			return nil, err
+		}
+	}
+	return &user, nil
 }

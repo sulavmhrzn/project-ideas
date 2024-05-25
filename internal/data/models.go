@@ -8,6 +8,7 @@ import (
 var (
 	ErrDuplicateUsername = errors.New("duplicate username")
 	ErrDuplicateEmail    = errors.New("duplicate email")
+	ErrNoRows            = errors.New("no rows found")
 )
 
 type Model struct {
