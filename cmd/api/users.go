@@ -2,6 +2,9 @@ package main
 
 import (
 	"net/http"
+	"time"
+
+	"github.com/sulavmhrzn/projectideas/internal/data"
 )
 
 func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -15,7 +18,17 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	err = app.writeJSON(w, http.StatusOK, map[string]any{"input": input})
+	user := &data.User{
+		Username:  input.Username,
+		Email:     input.Email,
+		CreatedAt: time.Now(),
+	}
+	err = user.Password.Set(input.Password)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	err = app.writeJSON(w, http.StatusOK, map[string]any{"user": user})
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
