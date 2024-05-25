@@ -9,6 +9,7 @@ import (
 	"os"
 
 	_ "github.com/lib/pq"
+	"github.com/sulavmhrzn/projectideas/internal/data"
 )
 
 const (
@@ -25,6 +26,7 @@ type application struct {
 	cfg      config
 	infoLog  *log.Logger
 	errorLog *log.Logger
+	models   data.Model
 }
 
 func main() {
@@ -33,16 +35,17 @@ func main() {
 	flag.StringVar(&cfg.dsn, "dsn", "postgres://projectideasuser:sulavpostgres@localhost:5432/projectideas", "Database dsn")
 	flag.Parse()
 
+	db, err := openDB(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
 	app := &application{
 		cfg:      cfg,
 		infoLog:  log.New(os.Stdout, fmt.Sprintf("%sINFO: %s", green, reset), log.Ldate|log.Ltime|log.Lshortfile),
 		errorLog: log.New(os.Stderr, fmt.Sprintf("%sERROR: %s", red, reset), log.Ldate|log.Ltime|log.Lshortfile),
+		models:   data.NewModel(db),
 	}
 
-	_, err := openDB(cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
 	app.infoLog.Println("database connection successful")
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", app.cfg.port),
