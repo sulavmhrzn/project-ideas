@@ -2,8 +2,8 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/sulavmhrzn/projectideas/internal/data"
 	"github.com/sulavmhrzn/projectideas/internal/validator"
@@ -89,5 +89,14 @@ func (app *application) loginUserHandler(w http.ResponseWriter, r *http.Request)
 		app.invalidCredentialsResponse(w, r)
 		return
 	}
-	app.writeJSON(w, http.StatusOK, fmt.Sprintf("logged in as %s", user.Email))
+	token, err := app.models.Token.New(user.Id, 1*time.Hour, data.ScopeAuthentication)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, token)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }
