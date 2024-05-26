@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -20,7 +19,8 @@ func (app *application) requireLoginMiddleware(next http.HandlerFunc) http.Handl
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authorizationHeader := r.Header.Get("Authorization")
 		if authorizationHeader == "" {
-			app.invalidTokenResponse(w, r)
+			r := app.contextSetUser(r, data.AnonymousUser)
+			next.ServeHTTP(w, r)
 			return
 		}
 		format := strings.Split(authorizationHeader, " ")
@@ -39,8 +39,7 @@ func (app *application) requireLoginMiddleware(next http.HandlerFunc) http.Handl
 			}
 			return
 		}
-		// TODO: add value to the request context
-		fmt.Println("logged in as ", user.Email)
+		r = app.contextSetUser(r, user)
 		next.ServeHTTP(w, r)
 	})
 }
