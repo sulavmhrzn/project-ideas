@@ -54,7 +54,7 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (app *application) loginUserHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) generateTokenHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`

@@ -94,3 +94,26 @@ func (m UserModel) GetByEmail(email string) (*User, error) {
 	}
 	return &user, nil
 }
+
+func (m UserModel) GetForToken(token string) (*User, error) {
+	query := `
+	SELECT id, username, email, created_at 
+	FROM users
+	JOIN tokens
+	ON tokens.userId = users.id
+	WHERE tokens.token = $1
+	AND expires_at > now()`
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var user User
+	err := m.DB.QueryRowContext(ctx, query, token).Scan(&user.Id, &user.Username, &user.Email, &user.CreatedAt)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrNoRows
+		default:
+			return nil, err
+		}
+	}
+	return &user, nil
+}

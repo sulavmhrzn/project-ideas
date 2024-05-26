@@ -40,3 +40,8 @@ func (app *application) invalidCredentialsResponse(w http.ResponseWriter, r *htt
 	message := "invalid credentials"
 	app.errorResponse(w, r, http.StatusUnauthorized, message)
 }
+
+func (app *application) invalidTokenResponse(w http.ResponseWriter, r *http.Request) {
+	message := "invalid token"
+	app.errorResponse(w, r, http.StatusUnauthorized, message)
+}
