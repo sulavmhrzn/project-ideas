@@ -50,3 +50,8 @@ func (app *application) unauthorizedResponse(w http.ResponseWriter, r *http.Requ
 	message := "you are not authorized to access this resource"
 	app.errorResponse(w, r, http.StatusUnauthorized, message)
 }
+
+func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request) {
+	message := "resource not found"
+	app.errorResponse(w, r, http.StatusNotFound, message)
+}

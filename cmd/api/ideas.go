@@ -1,8 +1,12 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
+	"strconv"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/sulavmhrzn/projectideas/internal/data"
 	"github.com/sulavmhrzn/projectideas/internal/validator"
 )
@@ -53,4 +57,25 @@ func (app *application) listIdeasHandler(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
+}
+
+func (app *application) getIdeaHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context()).ByName("id")
+	id, err := strconv.Atoi(params)
+	if id < 0 || err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	idea, err := app.models.Idea.Get(id)
+	fmt.Println(err != nil)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrNoRows):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+	app.writeJSON(w, http.StatusOK, idea)
 }

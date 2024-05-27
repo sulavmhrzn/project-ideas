@@ -139,3 +139,50 @@ func (m IdeaModel) List() ([]Idea, error) {
 	}
 	return ideas, nil
 }
+
+func (m IdeaModel) Get(id int) (*Idea, error) {
+	query := `SELECT ideas.id, ideas.title, ideas.description, ideas.created_at, tags.id, tags.title
+	FROM ideas
+	JOIN ideas_tags ON ideas_tags.idea_id = ideas.id
+	JOIN tags ON ideas_tags.tag_id = tags.id
+	WHERE ideas.id = $1
+	ORDER BY created_at DESC`
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	rows, err := m.DB.QueryContext(ctx, query, id)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+	ideasMap := make(map[int]*Idea)
+	for rows.Next() {
+		var ideaID int
+		var ideaTitle, ideaDescription string
+		var createdAt time.Time
+		var tagID int
+		var tagTitle string
+
+		err := rows.Scan(&ideaID, &ideaTitle, &ideaDescription, &createdAt, &tagID, &tagTitle)
+		if err != nil {
+			return nil, err
+		}
+		if idea, exist := ideasMap[ideaID]; exist {
+			idea.Tags = append(idea.Tags, Tag{Id: tagID, Title: tagTitle})
+		} else {
+			ideasMap[ideaID] = &Idea{
+				Id:          ideaID,
+				Title:       ideaTitle,
+				Description: ideaDescription,
+				CreatedAt:   createdAt,
+				Tags:        []Tag{{Id: tagID, Title: tagTitle}},
+			}
+		}
+	}
+	idea, exists := ideasMap[id]
+	if !exists {
+		return nil, ErrNoRows
+	}
+	return idea, nil
+}
