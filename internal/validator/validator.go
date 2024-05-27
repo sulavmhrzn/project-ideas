@@ -33,3 +33,13 @@ func (v *Validator) Valid() bool {
 func ValidEmail(email string) bool {
 	return EmailPatter.MatchString(email)
 }
+
+func Unique(value ...string) bool {
+	uniqueValues := make(map[string]bool)
+	for _, v := range value {
+		if _, ok := uniqueValues[v]; !ok {
+			uniqueValues[v] = true
+		}
+	}
+	return len(uniqueValues) == len(value)
+}

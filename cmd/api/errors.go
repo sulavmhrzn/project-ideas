@@ -45,3 +45,8 @@ func (app *application) invalidTokenResponse(w http.ResponseWriter, r *http.Requ
 	message := "invalid token"
 	app.errorResponse(w, r, http.StatusUnauthorized, message)
 }
+
+func (app *application) unauthorizedResponse(w http.ResponseWriter, r *http.Request) {
+	message := "you are not authorized to access this resource"
+	app.errorResponse(w, r, http.StatusUnauthorized, message)
+}

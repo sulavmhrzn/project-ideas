@@ -43,3 +43,15 @@ func (app *application) requireLoginMiddleware(next http.HandlerFunc) http.Handl
 		next.ServeHTTP(w, r)
 	})
 }
+
+func (app *application) requireAuthenticatedUser(next http.HandlerFunc) http.HandlerFunc {
+	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := app.contextGetUser(r)
+		if user.IsAnonymousUser() {
+			app.unauthorizedResponse(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+	return app.requireLoginMiddleware(fn)
+}
