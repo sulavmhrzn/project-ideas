@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
+
+	"github.com/julienschmidt/httprouter"
 )
 
 func (app *application) writeJSON(w http.ResponseWriter, status int, data any) error {
@@ -53,4 +56,13 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, input a
 		}
 	}
 	return nil
+}
+
+func (app *application) readIDParam(r *http.Request) (int, error) {
+	params := httprouter.ParamsFromContext(r.Context()).ByName("id")
+	id, err := strconv.Atoi(params)
+	if id < 0 || err != nil {
+		return 0, err
+	}
+	return id, nil
 }

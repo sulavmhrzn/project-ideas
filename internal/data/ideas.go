@@ -186,3 +186,24 @@ func (m IdeaModel) Get(id int) (*Idea, error) {
 	}
 	return idea, nil
 }
+
+func (m IdeaModel) Delete(ideaId, userId int) error {
+	query := `
+	DELETE FROM ideas WHERE id = $1 AND user_id = $2`
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	result, err := m.DB.ExecContext(ctx, query, ideaId, userId)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return ErrNoRows
+	}
+	return nil
+
+}
