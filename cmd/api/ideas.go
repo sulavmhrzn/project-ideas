@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/sulavmhrzn/projectideas/internal/data"
@@ -37,7 +36,21 @@ func (app *application) createIdeaHandler(w http.ResponseWriter, r *http.Request
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	fmt.Printf("%+v", idea)
-	w.Write([]byte(fmt.Sprintf("%+v", idea)))
 
+	err = app.writeJSON(w, http.StatusCreated, idea)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) listIdeasHandler(w http.ResponseWriter, r *http.Request) {
+	ideas, err := app.models.Idea.List()
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	err = app.writeJSON(w, http.StatusOK, ideas)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }
