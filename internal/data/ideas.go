@@ -208,7 +208,7 @@ func (m IdeaModel) Delete(ideaId, userId int) error {
 
 }
 
-// TODO: This method should update tags as well.
+// TODO: This method should update tags as well
 func (m IdeaModel) Update(ideaId, userId int, input *Idea) (*Idea, error) {
 	query := `
 	UPDATE ideas SET
@@ -226,7 +226,12 @@ func (m IdeaModel) Update(ideaId, userId int, input *Idea) (*Idea, error) {
 	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&idea.Id, &idea.Title, &idea.Description, &idea.CreatedAt)
 
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrNoRows
+		default:
+			return nil, err
+		}
 	}
 	return &idea, nil
 }

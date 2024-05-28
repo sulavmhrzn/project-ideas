@@ -143,7 +143,12 @@ func (app *application) updateIdeaHandler(w http.ResponseWriter, r *http.Request
 
 	idea, err = app.models.Idea.Update(id, user.Id, idea)
 	if err != nil {
-		app.serverErrorResponse(w, r, err)
+		switch {
+		case errors.Is(err, data.ErrNoRows):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
 		return
 	}
 	err = app.writeJSON(w, http.StatusOK, idea)
