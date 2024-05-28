@@ -15,6 +15,7 @@ func (app *application) router() http.Handler {
 	mux.HandlerFunc(http.MethodGet, "/v1/ideas", app.listIdeasHandler)
 	mux.HandlerFunc(http.MethodGet, "/v1/ideas/:id", app.getIdeaHandler)
 	mux.HandlerFunc(http.MethodDelete, "/v1/ideas/:id", app.requireAuthenticatedUser(app.deleteIdeaHandler))
+	mux.HandlerFunc(http.MethodPut, "/v1/ideas/:id", app.requireAuthenticatedUser(app.updateIdeaHandler))
 
 	return app.logRequestMiddleware(mux)
 }

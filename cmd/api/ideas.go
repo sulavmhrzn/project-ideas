@@ -100,3 +100,54 @@ func (app *application) deleteIdeaHandler(w http.ResponseWriter, r *http.Request
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *application) updateIdeaHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.contextGetUser(r)
+	id, err := app.readIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+	var input struct {
+		Title       *string `json:"title"`
+		Description *string `json:"description"`
+	}
+	err = app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	idea, err := app.models.Idea.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrNoRows):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	if input.Title != nil {
+		idea.Title = *input.Title
+	}
+	if input.Description != nil {
+		idea.Description = *input.Description
+	}
+
+	v := validator.New()
+	if data.ValidateIdea(v, idea); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	idea, err = app.models.Idea.Update(id, user.Id, idea)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	err = app.writeJSON(w, http.StatusOK, idea)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}

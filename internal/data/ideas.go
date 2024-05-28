@@ -207,3 +207,26 @@ func (m IdeaModel) Delete(ideaId, userId int) error {
 	return nil
 
 }
+
+// TODO: This method should update tags as well.
+func (m IdeaModel) Update(ideaId, userId int, input *Idea) (*Idea, error) {
+	query := `
+	UPDATE ideas SET
+	title = COALESCE(NULLIF($1, ''), title),
+	description = COALESCE(NULLIF($2, ''), description)
+	WHERE id = $3
+	AND user_id = $4
+	RETURNING id, title, description, created_at
+	`
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var idea Idea
+	args := []any{input.Title, input.Description, ideaId, userId}
+	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&idea.Id, &idea.Title, &idea.Description, &idea.CreatedAt)
+
+	if err != nil {
+		return nil, err
+	}
+	return &idea, nil
+}
