@@ -2,10 +2,12 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/sulavmhrzn/projectideas/internal/data"
+	"github.com/sulavmhrzn/projectideas/internal/mailer"
 	"github.com/sulavmhrzn/projectideas/internal/validator"
 )
 
@@ -125,9 +127,19 @@ func (app *application) sendResetPasswordTokenHandler(w http.ResponseWriter, r *
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	//TODO: send token to users email
-
-	err = app.writeJSON(w, http.StatusOK, token)
+	go func() {
+		dialer := mailer.NewDialer(app.cfg.mailer.host, app.cfg.mailer.port, app.cfg.mailer.username, app.cfg.mailer.password)
+		err = mailer.SendMail(dialer,
+			app.cfg.mailer.EmailFrom,
+			user.Email,
+			"Reset Password",
+			fmt.Sprintf("Your reset token %q. Please make an request to /v1/users/resetPassword with this token", token.Token),
+		)
+		if err != nil {
+			app.logError(err)
+		}
+	}()
+	err = app.writeJSON(w, http.StatusOK, map[string]any{"message": "reset password token sent"})
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

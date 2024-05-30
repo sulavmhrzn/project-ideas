@@ -7,7 +7,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/sulavmhrzn/projectideas/internal/data"
 )
@@ -19,8 +21,15 @@ const (
 )
 
 type config struct {
-	port int
-	dsn  string
+	port   int
+	dsn    string
+	mailer struct {
+		host      string
+		port      int
+		username  string
+		password  string
+		EmailFrom string
+	}
 }
 type application struct {
 	cfg      config
@@ -30,9 +39,27 @@ type application struct {
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	cfg := config{}
-	flag.IntVar(&cfg.port, "port", 4000, "port to listen")
-	flag.StringVar(&cfg.dsn, "dsn", "postgres://projectideasuser:sulavpostgres@localhost:5432/projectideas", "Database dsn")
+	port, err := strconv.Atoi(os.Getenv("PORT"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	mailerPort, err := strconv.Atoi(os.Getenv("MAILER_PORT"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	flag.IntVar(&cfg.port, "port", port, "port to listen")
+	flag.StringVar(&cfg.dsn, "dsn", os.Getenv("DSN"), "Database dsn")
+	flag.StringVar(&cfg.mailer.host, "mailer-host", os.Getenv("MAILER_HOST"), "mailer host")
+	flag.IntVar(&cfg.mailer.port, "mailer-port", mailerPort, "mailer port")
+	flag.StringVar(&cfg.mailer.username, "mailer-username", os.Getenv("MAILER_USERNAME"), "mailer username")
+	flag.StringVar(&cfg.mailer.password, "mailer-password", os.Getenv("MAILER_PASSWORD"), "mailer password")
+	flag.StringVar(&cfg.mailer.EmailFrom, "mailer-email-from", os.Getenv("MAILER_EMAIL_FROM"), "mailer email from")
 	flag.Parse()
 
 	db, err := openDB(cfg)
