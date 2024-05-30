@@ -29,7 +29,7 @@ func (app *application) requireLoginMiddleware(next http.HandlerFunc) http.Handl
 			return
 		}
 		token := format[1]
-		user, err := app.models.User.GetForToken(token)
+		user, err := app.models.User.GetForToken(token, data.ScopeAuthentication)
 		if err != nil {
 			switch {
 			case errors.Is(err, data.ErrNoRows):

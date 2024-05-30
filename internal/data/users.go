@@ -81,6 +81,21 @@ func (m UserModel) Insert(user *User) (*User, error) {
 	return user, nil
 }
 
+func (m UserModel) UpdatePassword(id int, hashed_password []byte) error {
+	query := `
+	UPDATE users
+	SET hash_password = $1
+	WHERE id = $2`
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := m.DB.ExecContext(ctx, query, hashed_password, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (m UserModel) GetByEmail(email string) (*User, error) {
 	query := `
 	SELECT id, username, email, hash_password
@@ -101,18 +116,19 @@ func (m UserModel) GetByEmail(email string) (*User, error) {
 	return &user, nil
 }
 
-func (m UserModel) GetForToken(token string) (*User, error) {
+func (m UserModel) GetForToken(token string, scope string) (*User, error) {
 	query := `
 	SELECT id, username, email, created_at 
 	FROM users
 	JOIN tokens
 	ON tokens.userId = users.id
 	WHERE tokens.token = $1
+	AND tokens.scope = $2
 	AND expires_at > now()`
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	var user User
-	err := m.DB.QueryRowContext(ctx, query, token).Scan(&user.Id, &user.Username, &user.Email, &user.CreatedAt)
+	err := m.DB.QueryRowContext(ctx, query, token, scope).Scan(&user.Id, &user.Username, &user.Email, &user.CreatedAt)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):

@@ -10,6 +10,8 @@ func (app *application) router() http.Handler {
 	mux := httprouter.New()
 	mux.HandlerFunc(http.MethodGet, "/v1/ping", app.pingHandler)
 	mux.HandlerFunc(http.MethodPost, "/v1/users/register", app.createUserHandler)
+	mux.HandlerFunc(http.MethodPost, "/v1/users/sendResetPassword", app.sendResetPasswordTokenHandler)
+	mux.HandlerFunc(http.MethodPut, "/v1/users/resetPassword", app.resetPasswordHandler)
 	mux.HandlerFunc(http.MethodPost, "/v1/tokens/authentication", app.generateTokenHandler)
 	mux.HandlerFunc(http.MethodPost, "/v1/ideas", app.requireAuthenticatedUser(app.createIdeaHandler))
 	mux.HandlerFunc(http.MethodGet, "/v1/ideas", app.listIdeasHandler)

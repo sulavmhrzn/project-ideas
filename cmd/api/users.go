@@ -100,3 +100,84 @@ func (app *application) generateTokenHandler(w http.ResponseWriter, r *http.Requ
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *application) sendResetPasswordTokenHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Email string `json:"email"`
+	}
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	user, err := app.models.User.GetByEmail(input.Email)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrNoRows):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+	token, err := app.models.Token.New(user.Id, 24*time.Hour, data.ScopePasswordReset)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	//TODO: send token to users email
+
+	err = app.writeJSON(w, http.StatusOK, token)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) resetPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Token    string `json:"token"`
+		Password string `json:"password"`
+	}
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	v := validator.New()
+	v.Check(input.Token != "", "token", "must be provided")
+	v.Check(input.Password != "", "password", "must be provided")
+	v.Check(len(input.Password) > 10, "password", "must be greater than 10 characters long")
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+	user, err := app.models.User.GetForToken(input.Token, data.ScopePasswordReset)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrNoRows):
+			app.invalidTokenResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+	err = user.Password.Set(input.Password)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	err = app.models.User.UpdatePassword(user.Id, user.Password.HashedPassword)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	err = app.models.Token.DeleteForUser(user.Id)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	err = app.writeJSON(w, http.StatusOK, map[string]string{"message": "password reset successfull"})
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}

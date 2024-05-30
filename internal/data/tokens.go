@@ -5,12 +5,12 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/base32"
-	"fmt"
 	"time"
 )
 
 const (
 	ScopeAuthentication = "authentication"
+	ScopePasswordReset  = "password_reset"
 )
 
 type Token struct {
@@ -45,7 +45,6 @@ func (m *TokenModel) New(userId int, ttl time.Duration, scope string) (*Token, e
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("%s", token.Token)
 	err = m.Insert(token)
 	return token, err
 }
@@ -59,5 +58,15 @@ func (m *TokenModel) Insert(token *Token) error {
 	defer cancel()
 	args := []any{token.UserId, token.Token, token.Scope, token.ExpiresAt}
 	_, err := m.DB.ExecContext(ctx, query, args...)
+	return err
+}
+
+func (m *TokenModel) DeleteForUser(id int) error {
+	query := `
+	DELETE FROM tokens
+	WHERE tokens.userId = $1`
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := m.DB.ExecContext(ctx, query, id)
 	return err
 }
